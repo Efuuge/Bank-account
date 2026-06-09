@@ -4,26 +4,23 @@ import java.util.*;
 
 public class AIAssistant {
     private List<String[]> history = new ArrayList<>();
+    private static final int MAX_HISTORY_SIZE = 14;
 
     private String loadApiKey() {
-        try {
-            BufferedReader r = new BufferedReader(new FileReader("api_key.txt"));
-            String key = r.readLine().trim();
-            r.close();
-            return key;
+        try (BufferedReader r = new BufferedReader(new FileReader("api_key.txt"))) {
+            return r.readLine().trim();
         } catch (Exception e) {
             return null;
         }
     }
 
-    public void startConversation() {
+    public void startConversation(Scanner scanner) {
         String apiKey = loadApiKey();
         if (apiKey == null) {
             System.out.println(Lang.get("ai_key_missing"));
             return;
         }
 
-        Scanner scanner = new Scanner(System.in);
         System.out.println(Lang.get("ai_greeting"));
         System.out.println();
 
@@ -33,6 +30,12 @@ public class AIAssistant {
 
             if (input.equalsIgnoreCase("выход") || input.equalsIgnoreCase("exit") || input.equalsIgnoreCase("chiqish")) {
                 break;
+            }
+            if (input.isEmpty()) continue;
+
+            if (history.size() >= MAX_HISTORY_SIZE) {
+                history.remove(0);
+                history.remove(0);
             }
 
             history.add(new String[]{"user", input});
@@ -49,34 +52,32 @@ public class AIAssistant {
             URL url = new URL("https://api.groq.com/openai/v1/chat/completions");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Authorization", "Bearer " + apiKey);
+            conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(30000);
 
-            String system = "You are a helpful banking assistant. Answer questions about banking and finance. Reply in the same language the user writes in.";
+            StringBuilder sb = new StringBuilder();
+            sb.append("{\"model\":\"llama3-8b-8192\",\"messages\":[");
+            sb.append("{\"role\":\"system\",\"content\":\"You are a helpful financial assistant inside a banking app. Answer short and precisely.\"}");
 
-            StringBuilder msgs = new StringBuilder("[");
-            msgs.append("{\"role\":\"system\",\"content\":\"").append(escape(system)).append("\"}");
             for (String[] msg : history) {
-                msgs.append(",{\"role\":\"").append(msg[0]).append("\",\"content\":\"").append(escape(msg[1])).append("\"}");
+                sb.append(",{\"role\":\"").append(msg[0]).append("\",\"content\":\"").append(escape(msg[1])).append("\"}");
             }
-            msgs.append("]");
+            sb.append("]}");
 
-            String body = "{\"model\":\"llama3-8b-8192\",\"max_tokens\":1000,\"messages\":" + msgs + "}";
-
-            OutputStream os = conn.getOutputStream();
-            os.write(body.getBytes("UTF-8"));
-            os.close();
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(sb.toString().getBytes("UTF-8"));
+            }
 
             int code = conn.getResponseCode();
-            InputStream is = code == 200 ? conn.getInputStream() : conn.getErrorStream();
-            BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             StringBuilder resp = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) resp.append(line);
-            br.close();
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                    code == 200 ? conn.getInputStream() : conn.getErrorStream(), "UTF-8"))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    resp.append(line);
+                }
+            }
 
             if (code != 200) return "Error " + code + ": " + resp;
             return extractText(resp.toString());
