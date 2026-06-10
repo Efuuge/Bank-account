@@ -164,20 +164,20 @@ public class BankAccount {
         if (!hasHistory) System.out.println(Lang.get("history_empty"));
     }
 
+    // FIX 1: поменян порядок проверок — "->" и "<-" проверяются раньше чем "-" и "+"
     public static double calculateTurnover(String name) {
         double total = 0;
         try (BufferedReader r = new BufferedReader(new FileReader("history_" + name + ".txt"))) {
             String line;
             while ((line = r.readLine()) != null) {
-                if (line.startsWith("+") || line.startsWith("<-")) {
+                if (line.startsWith("->") || line.startsWith("<-")) {
                     String[] parts = line.split(" ");
-                    String val = parts[0].replace("+", "").replace("<-", "");
-                    if (val.contains(":")) val = parts[1];
+                    String val = parts[0].replace("->", "").replace("<-", "");
+                    if (val.contains(":") || val.isEmpty()) val = parts[1];
                     total += Double.parseDouble(val);
-                } else if (line.startsWith("-") || line.startsWith("->")) {
+                } else if (line.startsWith("+") || line.startsWith("-")) {
                     String[] parts = line.split(" ");
-                    String val = parts[0].replace("-", "").replace("->", "");
-                    if (val.contains(":")) val = parts[1];
+                    String val = parts[0].replace("+", "").replace("-", "");
                     total += Double.parseDouble(val);
                 }
             }
