@@ -211,6 +211,7 @@ public class Main {
         }
     }
 
+    // FIX 2: добавлены проверки на пустые списки перед обращением по индексу
     static void handleCardTransfer(BankAccount account) {
         ArrayList<String> quickCards = account.loadQuickCards();
         ArrayList<String> historyCards = account.parseHistoryCards();
@@ -237,9 +238,21 @@ public class Main {
 
         String cardNum = "";
         if (select >= 1 && select < historyStartIdx) {
-            cardNum = quickCards.get(select - 1);
+            // FIX 2: проверка что quickCards не пустой и индекс валиден
+            int qIdx = select - 1;
+            if (qIdx >= quickCards.size()) {
+                System.out.println(Lang.get("invalid"));
+                return;
+            }
+            cardNum = quickCards.get(qIdx);
         } else if (select >= historyStartIdx && select < idx) {
-            cardNum = historyCards.get(select - historyStartIdx);
+            // FIX 2: проверка что historyCards не пустой и индекс валиден
+            int hIdx = select - historyStartIdx;
+            if (hIdx >= historyCards.size()) {
+                System.out.println(Lang.get("invalid"));
+                return;
+            }
+            cardNum = historyCards.get(hIdx);
         } else if (select == idx) {
             System.out.print(Lang.get("enter_card"));
             cardNum = scanner.nextLine().trim();
@@ -258,23 +271,25 @@ public class Main {
         account.transferToCard(cardNum, amount);
     }
 
+    // FIX 4: рекурсия заменена на цикл while(true) — нет риска StackOverflowError
     static BankAccount selectAccount() {
-        ArrayList<String> accounts = BankAccount.getAllAccounts();
-        if (accounts.isEmpty()) {
-            System.out.println(Lang.get("no_accounts"));
-            return createAccount();
+        while (true) {
+            ArrayList<String> accounts = BankAccount.getAllAccounts();
+            if (accounts.isEmpty()) {
+                System.out.println(Lang.get("no_accounts"));
+                return createAccount();
+            }
+            System.out.println("\n" + Lang.get("your_accounts"));
+            for (int i = 0; i < accounts.size(); i++)
+                System.out.println((i + 1) + ". " + accounts.get(i));
+            System.out.println((accounts.size() + 1) + Lang.get("create_new"));
+            System.out.print(Lang.get("choose"));
+            int ch = readInt();
+            if (ch == -1) continue;
+            if (ch == accounts.size() + 1) return createAccount();
+            if (ch >= 1 && ch <= accounts.size()) return new BankAccount(accounts.get(ch - 1));
+            System.out.println(Lang.get("invalid"));
         }
-        System.out.println("\n" + Lang.get("your_accounts"));
-        for (int i = 0; i < accounts.size(); i++)
-            System.out.println((i + 1) + ". " + accounts.get(i));
-        System.out.println((accounts.size() + 1) + Lang.get("create_new"));
-        System.out.print(Lang.get("choose"));
-        int ch = readInt();
-        if (ch == -1) return selectAccount();
-        if (ch == accounts.size() + 1) return createAccount();
-        if (ch >= 1 && ch <= accounts.size()) return new BankAccount(accounts.get(ch - 1));
-        System.out.println(Lang.get("invalid"));
-        return selectAccount();
     }
 
     static BankAccount createAccount() {
