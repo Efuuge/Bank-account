@@ -29,7 +29,8 @@ public class Lang {
         t.put("no_accounts",       new String[]{"У вас нет счетов. Давайте создадим первый!","No accounts found. Let's create the first one!","Sizda hisoblar yo'q. Birinchisini yaratamiz!"});
 
         t.put("menu_1",  new String[]{"1. Показать баланс",         "1. Show balance",              "1. Balansni ko'rsatish"});
-        t.put("menu_2",  new String[]{"2. Пополнитель счёт",        "2. Deposit",                   "2. Hisobni to'ldirish"});
+        // FIX 5: исправлена опечатка "Пополнитель" -> "Пополнить"
+        t.put("menu_2",  new String[]{"2. Пополнить счёт",          "2. Deposit",                   "2. Hisobni to'ldirish"});
         t.put("menu_3",  new String[]{"3. Снять наличные",          "3. Withdraw",                  "3. Naqd pul yechish"});
         t.put("menu_4",  new String[]{"4. Перевод на другой счёт",  "4. Transfer to account",       "4. Boshqa hisobga o'tkazish"});
         t.put("menu_5",  new String[]{"5. Сменить счёт",            "5. Switch account",            "5. Hisobni almashtirish"});
